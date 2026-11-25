@@ -1,0 +1,122 @@
+{{/* web/templates/pages.html : toutes les pages de GameDex dans un seul fichier.
+   Chaque page est un bloc {{define}} : le nom entre guillemets est celui qu'on donne à ExecuteTemplate. */}}
+  
+{{define "header"}}<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} · GameDex</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  {{if .Map}}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{{end}}
+</head>
+<body>
+  <header>
+    <a href="/">GameDex</a>
+    <nav><a href="/jeux">Les jeux</a></nav>
+  </header>
+  <main>
+{{end}}
+
+{{define "footer"}}  </main>
+  <footer>GameDex · B1 Ynov Lyon Campus</footer>
+</body>
+</html>
+{{end}}
+
+{{define "accueil.html"}}
+{{template "header" .}}
+<h1>Bienvenue sur GameDex</h1>
+<p>Le catalogue des jeux vidéo et de leurs tournois.</p>
+<p><a class="bouton" href="/jeux">Voir les jeux</a></p>
+{{template "footer" .}}
+{{end}}
+
+{{define "liste.html"}}
+{{template "header" .}}
+<h1>Les jeux</h1>
+
+{{/* Filtrer : un formulaire GET, les filtres sont dans l'URL (partageable). */}}
+<form class="filtres" method="get" action="/jeux">
+  <input type="search" id="recherche" name="q" value="{{.Query}}" placeholder="Chercher un jeu">
+  <select name="genre" id="genre">
+    <option value="">Tous les genres</option>
+    {{range .Genres}}
+      <option value="{{.}}"{{if eq . $.Genre}} selected{{end}}>{{.}}</option>
+    {{end}}
+  </select>
+  <button>Filtrer</button>
+</form>
+
+{{if .Query}}
+  <p class="recherche">Vous avez cherché : <strong>{{.Query}}</strong>{{if .Genre}} · genre : <strong>{{.Genre}}</strong>{{end}}{{if eq .Source "API"}} <em>(résultats de la mini API)</em>{{end}}</p>
+{{end}}
+
+<ul class="jeux" id="liste">
+  {{range .Games}}
+    <li><a href="/jeux/{{.ID}}">{{.Name}}</a> <span class="annee">{{.Year}}</span></li>
+  {{else}}
+    <li>Aucun jeu ne correspond.</li>
+  {{end}}
+</ul>
+
+{{/* Bonus : le même chemin, mais le formulaire part en POST et notre serveur interroge la mini API. */}}
+<details class="via-api">
+  <summary>Recherche via la mini API (POST)</summary>
+  <form class="filtres" method="post" action="/recherche">
+    <input type="search" name="q" placeholder="Chercher via l'API">
+    <select name="genre">
+      <option value="">Tous les genres</option>
+      {{range .Genres}}
+        <option value="{{.}}">{{.}}</option>
+      {{end}}
+    </select>
+    <button>Envoyer</button>
+  </form>
+</details>
+
+<script src="/static/js/filtre.js"></script>
+{{template "footer" .}}
+{{end}}
+
+{{define "jeu.html"}}
+{{template "header" .}}
+<p><a href="/jeux">← Tous les jeux</a></p>
+<h1>{{.Game.Name}}</h1>
+<p>Sorti en {{.Game.Year}} par {{.Game.Studio}}</p>
+<ul class="genres">
+  {{range .Game.Genres}}
+    <li><a href="/jeux?genre={{.}}">{{.}}</a></li>
+  {{end}}
+</ul>
+
+<h2>Tournois</h2>
+<ul class="tournois">
+  {{range .Tournaments}}
+    <li><strong>{{.Name}}</strong> · {{.City}} · {{.Date}}</li>
+  {{else}}
+    <li>Aucun tournoi prévu</li>
+  {{end}}
+</ul>
+
+{{if .Tournaments}}
+  <div id="carte"></div>
+  <script>
+    {{/* Dans une balise script, html/template écrit la donnée en JSON, tout seul. */}}
+    const tournois = {{.Tournaments}};
+  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/static/js/carte.js"></script>
+{{end}}
+{{template "footer" .}}
+{{end}}
+
+{{define "erreur.html"}}
+{{template "header" .}}
+<div class="erreur">
+  <p class="code">{{.Code}}</p>
+  <h1>{{.Message}}</h1>
+  <p><a href="/">Retour à l'accueil</a></p>
+</div>
+{{template "footer" .}}
+{{end}}
